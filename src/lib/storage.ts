@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv } from '@upstash/redis';
 
 export type FunnelRow = {
   date:             string;
