@@ -15,7 +15,7 @@
     "xlsx": "^0.18.5",
     "chart.js": "^4.4.1",
     "react-chartjs-2": "^5.2.0",
-    "@vercel/kv": "^2.0.0"
+    "@upstash/redis": "^2.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",
