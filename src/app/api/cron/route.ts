@@ -5,7 +5,6 @@ import { saveRow } from '@/lib/storage';
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // Verify this is called by Vercel cron (not a random request)
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
