@@ -303,8 +303,7 @@ export default function Dashboard() {
                     }}
                     options={{
                       responsive: true, maintainAspectRatio: false,
-                      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => isRate ? c.parsed.y.toFixed(1)+'%' : c.parsed.y.toLocaleString() }}},
-                      scales: {
+                              plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => isRate ? (c.parsed.y ?? 0).toFixed(1)+'%' : (c.parsed.y ?? 0).toLocaleString() }}},                      scales: {
                         x: { ticks: { color:'#9b9b96', font:{size:11} }, grid: { color:'#e2e1db' }},
                         y: { ticks: { color:'#9b9b96', font:{size:11}, callback: (v) => isRate ? v+'%' : Number(v).toLocaleString() }, grid: { color:'#e2e1db' }, beginAtZero: true }
                       }
