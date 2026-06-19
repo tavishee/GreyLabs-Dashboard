@@ -17,9 +17,16 @@ export type FunnelRow = {
 };
 
 function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    return null;
+  }
+
   return new Redis({
-    url:   process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url,
+    token,
   });
 }
 
@@ -32,12 +39,21 @@ function dateScore(dateStr: string): number {
 
 export async function saveRow(row: FunnelRow) {
   const redis = getRedis();
+  if (!redis) {
+    console.warn('Skipping row save because Upstash Redis is not configured.');
+    return;
+  }
+
   await redis.set(ROW_PREFIX + row.date, JSON.stringify(row));
   await redis.zadd(INDEX_KEY, { score: dateScore(row.date), member: row.date });
 }
 
 export async function getAllRows(): Promise<FunnelRow[]> {
   const redis = getRedis();
+  if (!redis) {
+    return [];
+  }
+
   const dates = await redis.zrange(INDEX_KEY, 0, -1) as string[];
   if (!dates.length) return [];
   const rows = await Promise.all(
