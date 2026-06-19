@@ -1,4 +1,4 @@
-import { kv } from '@upstash/redis';
+import { Redis } from '@upstash/redis';
 
 export type FunnelRow = {
   date:             string;
@@ -16,33 +16,36 @@ export type FunnelRow = {
   e2e_rate:         number;
 };
 
-const INDEX_KEY = 'funnel:index'; // sorted set of dates
+function getRedis() {
+  return new Redis({
+    url:   process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+}
+
+const INDEX_KEY  = 'funnel:index';
 const ROW_PREFIX = 'funnel:row:';
-
-export async function saveRow(row: FunnelRow) {
-  const key = ROW_PREFIX + row.date;
-  await kv.set(key, JSON.stringify(row));
-  await kv.zadd(INDEX_KEY, { score: dateScore(row.date), member: row.date });
-}
-
-export async function getAllRows(): Promise<FunnelRow[]> {
-  const dates = await kv.zrange(INDEX_KEY, 0, -1) as string[];
-  if (!dates.length) return [];
-  const rows = await Promise.all(
-    dates.map(async d => {
-      const raw = await kv.get<string>(ROW_PREFIX + d);
-      if (!raw) return null;
-      return typeof raw === 'string' ? JSON.parse(raw) as FunnelRow : raw as FunnelRow;
-    })
-  );
-  return rows.filter(Boolean) as FunnelRow[];
-}
-
-export async function getRowsByDateRange(from: string, to: string): Promise<FunnelRow[]> {
-  const all = await getAllRows();
-  return all.filter(r => r.date >= from && r.date <= to);
-}
 
 function dateScore(dateStr: string): number {
   return parseInt(dateStr.replace(/-/g, ''), 10);
+}
+
+export async function saveRow(row: FunnelRow) {
+  const redis = getRedis();
+  await redis.set(ROW_PREFIX + row.date, JSON.stringify(row));
+  await redis.zadd(INDEX_KEY, { score: dateScore(row.date), member: row.date });
+}
+
+export async function getAllRows(): Promise<FunnelRow[]> {
+  const redis = getRedis();
+  const dates = await redis.zrange(INDEX_KEY, 0, -1) as string[];
+  if (!dates.length) return [];
+  const rows = await Promise.all(
+    dates.map(async d => {
+      const raw = await redis.get<string>(ROW_PREFIX + d);
+      if (!raw) return null;
+      return (typeof raw === 'string' ? JSON.parse(raw) : raw) as FunnelRow;
+    })
+  );
+  return rows.filter(Boolean) as FunnelRow[];
 }
